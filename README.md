@@ -1,101 +1,133 @@
-Splunk SIEM — Windows Security Monitoring
+# Splunk SIEM — Windows Security Monitoring
 
-Overview
+**Project 2 | Hands-on SOC Monitoring Lab**
 
-This project was built to practice using Splunk as a SIEM in a Windows environment.
+## 1. Project Overview
 
-I used a Windows Server 2022 Domain Controller and Splunk Enterprise running on my host machine. The Windows Server sends Security Event Logs to Splunk through the Splunk Universal Forwarder.
+This project demonstrates the use of Splunk Enterprise as a SIEM solution in a Windows Server environment.
 
-The main focus was authentication monitoring, SPL searches, event investigation, and building a basic SOC dashboard.
+A Windows Server 2022 Domain Controller generated Windows Security Events. Splunk Universal Forwarder collected the Security logs and forwarded them to Splunk Enterprise for monitoring, searching, and investigation.
 
-Environment
+The lab focused on authentication monitoring, Windows Event ID analysis, source-address investigation, privileged activity, and SOC dashboard creation.
 
-Component: Windows Server 2022 (DC01 / NKAD)
-Purpose: Generates Windows Security Events
+## 2. Lab Architecture
 
-Component: Splunk Universal Forwarder
-Purpose: Collects and forwards logs
+| Component | Purpose |
+|---|---|
+| Windows Server 2022 (DC01 / NKAD) | Windows Security Event Log source |
+| Splunk Universal Forwarder | Log collection and forwarding |
+| Splunk Enterprise | SIEM, search, analysis, and dashboard |
+| VMware Workstation | Virtual lab environment |
+| TCP 9997 | Splunk receiving port |
 
-Component: Splunk Enterprise
-Purpose: SIEM and log analysis
+**Log flow:**
 
-Component: VMware Workstation
-Purpose: Virtual lab environment
+Windows Server 2022 → Splunk Universal Forwarder → Splunk Enterprise
 
-Component: TCP 9997
-Purpose: Splunk receiving port
-
-Log Collection
+## 3. Log Collection Configuration
 
 The Universal Forwarder was configured to collect the Windows Security Event Log.
 
+```ini
 [WinEventLog://Security]
 disabled = 0
 index = main
 start_from = oldest
 current_only = 0
 checkpointInterval = 5
+```
 
-Splunk Enterprise successfully received the Windows Security events.
+Windows Security events were successfully received in Splunk under the `main` index.
 
-SPL & Event Investigation
+## 4. Windows Security Event Investigation
 
-Successful Logons — Event ID 4624
-
-index=main host=NKAD EventCode=4624
+### Event ID 4624 — Successful Logons
 
 Used to identify successful authentication activity.
 
-Failed Logons — Event ID 4625
+```spl
+index=main host=NKAD EventCode=4624
+```
 
+### Event ID 4625 — Failed Logons
+
+Used to investigate failed authentication attempts.
+
+```spl
 index=main host=NKAD sourcetype="WinEventLog:Security" EventCode=4625
+```
 
-During testing, I generated failed authentication attempts and investigated the resulting events.
+**Investigation findings:**
 
-The events showed:
+- Account: Shadow
+- Source IP: 127.0.0.1
+- Logon Type: 2
+- Failure Reason: Unknown user name or bad password
 
-Account: Shadow
-Source IP: 127.0.0.1
-Logon Type: 2
-Failure Reason: Unknown user name or bad password
+This was a controlled failed-login test generated in the lab, not a confirmed remote attack.
 
-The source address indicated that the activity came from the local machine, so the events were treated as lab-generated test activity rather than a remote attack.
+### Event ID 4672 — Special Privileges Assigned
 
-Privileged Activity — Event ID 4672
+Used to investigate privileged activity associated with logon sessions.
 
+```spl
 index=main host=NKAD sourcetype="WinEventLog:Security" EventCode=4672
 | stats count by Account_Name
 | sort - count
+```
 
-Results included:
+**Observed accounts included:**
+- SYSTEM
+- Shadow
 
-SYSTEM: 2,139
-Shadow: 138
+Event ID 4672 was treated as an investigation point, not automatically classified as malicious.
 
-This was used to practice identifying privileged account activity.
+## 5. Additional Windows Security Events
 
+Other event types observed during the lab included:
 
-Splunk Dashboard
+| Event ID | Activity |
+|---|---|
+| 4624 | Successful logon |
+| 4625 | Failed logon |
+| 4634 | Logoff |
+| 4648 | Explicit credential use |
+| 4672 | Special privileges assigned |
 
-Created a dashboard called Splunk SOC Monitoring.
+## 6. Splunk SOC Monitoring Dashboard
 
+Created a dashboard named **Splunk SOC Monitoring**.
 
-The dashboard contains:
+The dashboard contains four monitoring panels:
 
-Failed Logons by Account and Source IP
-Authentication Success vs Failure
-Privileged Account Activity
-Windows Security Events by EventCode
+1. Failed Logons by Account and Source IP
+2. Authentication Success vs Failure
+3. Privileged Account Activity
+4. Windows Security Events by EventCode
 
+The dashboard provides a centralized view of the Windows Security activity investigated during the project.
 
-What I Practiced
+## 7. Skills Practiced
 
-Splunk SIEM fundamentals
-SPL searching and filtering
-Windows Security Event Logs
-Authentication monitoring
-Failed-logon investigation
-Source IP investigation
-Privileged activity monitoring
-Basic SOC dashboard creation
-Security event analysis 
+- Splunk Enterprise fundamentals
+- SPL searching and filtering
+- Windows Security Event Log analysis
+- Authentication monitoring
+- Failed-logon investigation
+- Source IP investigation
+- Privileged activity monitoring
+- Security event analysis
+- SOC dashboard creation
+- Basic SOC investigation workflow
+
+## 8. Evidence & Documentation
+
+The complete technical evidence report includes screenshots of the lab configuration, log ingestion, SPL investigations, Windows Security events, and the completed Splunk dashboard.
+
+📄 [View Project 2 — Splunk SIEM Evidence Report](Project_2_Splunk_SIEM_Evidence_Report.pdf)
+
+---
+
+**Environment:** Windows Server 2022 | Splunk Enterprise | Splunk Universal Forwarder | VMware Workstation
+
+*Hands-on SIEM monitoring and Windows Security Event investigation.*
